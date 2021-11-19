@@ -5,12 +5,29 @@ const screenshotImage = document.querySelector('img');
 const buttons = [...controls.querySelectorAll('button')];
 let streamStarted = false;
 let hiddenCanvas = document.createElement("canvas");
+let lastDeviceId = "";
+let devicesFound = 0;
 //document.body.appendChild(hiddenCanvas);
 
 const [play, pause, screenshot] = buttons;
 
+const constraints = {
+    video: {
+      width: {
+        min: 800,
+        ideal: 800,
+        max: 2560,
+      },
+      height: {
+        min: 600,
+        ideal: 600,
+        max: 1440
+      },
+    }
+  };
+
 play.onclick = () => {
-    if (streamStarted) {
+    if (streamStarted && lastDeviceId == cameraOptions.value) {
         video.play();
         timerCallback();
         return;
@@ -36,11 +53,8 @@ const getFrame = () => {
         const red = frame.data[i + 0];
         const green = frame.data[i + 1];
         const blue = frame.data[i + 2];
-        if (green > 100) {
-            frame.data[i + 3] = 0;
-        }
     }
-    hiddenCanvas.getContext('2d').putImageData(frame, 0, 0);
+    //hiddenCanvas.getContext('2d').putImageData(frame, 0, 0);
 };
 
 pause.onclick = pauseStream;
@@ -59,6 +73,7 @@ const getCameraSelection = async () => {
         options.push(`<option value="${videoDevice.deviceId}">${label}</option>`);
     }
     cameraOptions.innerHTML = options.join('');
+    devicesFound = videoDevices.length;
 };
 
 function timerCallback() {
@@ -66,7 +81,7 @@ function timerCallback() {
     if (video.paused || video.ended) {
         return;
     }
-    getFrame();
+    //getFrame();
     setTimeout(() => {
         timerCallback();
     }, 100);
@@ -78,41 +93,34 @@ const SUPPORTS_MEDIA_DEVICES = 'mediaDevices' in navigator;
 
 const startStream = async () => {
     if (SUPPORTS_MEDIA_DEVICES) {
-        navigator.mediaDevices.getUserMedia({video: true})
-        navigator.mediaDevices.enumerateDevices().then(devices => {
-            const cameras = devices.filter((device) => device.kind === 'videoinput');
-    
-            if (cameras.length === 0) {
-                throw 'No camera found on this device.';
+        if (devicesFound === 0) {
+            throw 'No camera found on this device.';
+        }
+
+        navigator.mediaDevices.getUserMedia({
+            ...constraints,
+            deviceId: {
+                exact: cameraOptions.value
             }
-            const camera = cameras[cameras.length - 1];
-    
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    deviceId: cameraOptions.value,
-                    facingMode: ['user', 'environment'],
-                    height: {ideal: 1080},
-                    width: {ideal: 1920}
-                }
-            }).then(stream => {
-                video.srcObject = stream;
-                streamStarted = true;
-                const track = stream.getVideoTracks()[0];
-                setTimeout(() => {
-                    timerCallback();
-                }, 100);
-    
-                try {
-                    const imageCapture = new ImageCapture(track);
-                    const photoCapabilities = imageCapture.getPhotoCapabilities().then(() => {
-                        track.applyConstraints({
-                            advanced: [{torch: true}]
-                        });
+        }).then(stream => {
+            video.srcObject = stream;
+            streamStarted = true;
+            lastDeviceId = cameraOptions.value;
+            const track = stream.getVideoTracks()[0];
+            setTimeout(() => {
+                timerCallback();
+            }, 100);
+
+            try {
+                const imageCapture = new ImageCapture(track);
+                const photoCapabilities = imageCapture.getPhotoCapabilities().then(() => {
+                    track.applyConstraints({
+                        advanced: [{torch: true}]
                     });
-                } catch {
-                    
-                }
-            });
+                });
+            } catch {
+                
+            }
         });
     }
 };
