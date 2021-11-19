@@ -23,72 +23,97 @@ const constraints = {
 };
 
 cameraOptions.onchange = () => {
-  const updatedConstraints = {
-    ...constraints,
-    deviceId: {
-      exact: cameraOptions.value
-    }
-  };
+    const updatedConstraints = {
+        ...constraints,
+        deviceId: {
+        exact: cameraOptions.value
+        }
+    };
 
-  startStream(updatedConstraints);
+    startStream(updatedConstraints);
 };
 
 play.onclick = () => {
-  if (streamStarted) {
-    video.play();
-    play.classList.add('d-none');
-    pause.classList.remove('d-none');
-    return;
-  }
-  if ('mediaDevices' in navigator && navigator.mediaDevices.getUserMedia) {
-    const updatedConstraints = {
-      ...constraints,
-      deviceId: {
-        exact: cameraOptions.value
-      }
-    };
-    startStream(updatedConstraints);
-  }
+    if (streamStarted) {
+        video.play();
+        return;
+    }
+    if ('mediaDevices' in navigator && navigator.mediaDevices.getUserMedia) {
+        const updatedConstraints = {
+        ...constraints,
+        deviceId: {
+            exact: cameraOptions.value
+        }
+        };
+        startStream(updatedConstraints);
+    }
 };
 
 const pauseStream = () => {
-  video.pause();
-  play.classList.remove('d-none');
-  pause.classList.add('d-none');
-};
-
-const doScreenshot = () => {
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  screenshotImage.src = canvas.toDataURL('image/webp');
-  screenshotImage.classList.remove('d-none');
+    video.pause();
 };
 
 pause.onclick = pauseStream;
 
 const startStream = async (constraints) => {
-  const stream = await navigator.mediaDevices.getUserMedia(constraints);
-  handleStream(stream);
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    handleStream(stream);
 };
 
+function timerCallback() {
+    if (video.paused || video.ended) {
+        return;
+    }
+    //getFrame();
+    setTimeout(() => {
+        timerCallback();
+    }, 100);
+};
+
+const getFrame = () => {
+    console.log("a");
+    hiddenCanvas.width = video.videoWidth;
+    hiddenCanvas.height = video.videoHeight;
+    let ctx = hiddenCanvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    let frame = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+    let length = frame.data.length;
+    for (let i = 0; i < length; i += 4) {
+        const red = frame.data[i + 0];
+        const green = frame.data[i + 1];
+        const blue = frame.data[i + 2];
+    }
+    //hiddenCanvas.getContext('2d').putImageData(frame, 0, 0);
+};
 
 const handleStream = (stream) => {
-  video.srcObject = stream;
-  play.classList.add('d-none');
-  pause.classList.remove('d-none');
-  screenshot.classList.remove('d-none');
+    video.srcObject = stream;
+    streamStarted = true;
+    let track = stream.getVideoTracks()[0];
+    setTimeout(() => {
+        timerCallback();
+    }, 100);
 
+    try {
+        const imageCapture = new ImageCapture(track);
+        const photoCapabilities = imageCapture.getPhotoCapabilities().then(() => {
+            track.applyConstraints({
+                advanced: [{torch: true}]
+            });
+        });
+    } catch {
+        
+    }
 };
 
 
 const getCameraSelection = async () => {
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  const videoDevices = devices.filter(device => device.kind === 'videoinput');
-  const options = videoDevices.map(videoDevice => {
-    return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
-  });
-  cameraOptions.innerHTML = options.join('');
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+    const options = videoDevices.map(videoDevice => {
+        return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
+    });
+    cameraOptions.innerHTML = options.join('');
 };
 
 getCameraSelection();
