@@ -1,7 +1,6 @@
 import { Chart, registerables } from './lib/chart.esm.js';
 Chart.register(...registerables);
 
-
 const controls = document.querySelector('.controls');
 const cameraFacingMode = document.querySelector('.video-options>.select-facing-mode');
 const cameraOptions = document.querySelector('.video-options>.select-camera');
@@ -59,7 +58,7 @@ function startCamera() {
     }
 }
 
-const pauseStream = () => {
+function pauseStream () {
     video.pause();
     if (currentVideoTrack != null) {
         currentVideoTrack.stop();
@@ -69,7 +68,7 @@ const pauseStream = () => {
 
 pause.onclick = pauseStream;
 
-const startStream = async () => {
+async function startStream() {
     if (currentVideoTrack != null) {
         currentVideoTrack.stop();
     }
@@ -96,6 +95,27 @@ const startStream = async () => {
     handleStream(stream);
 };
 
+function handleStream(stream) {
+    video.srcObject = stream;
+    streamStarted = true;
+    let track = stream.getVideoTracks()[0];
+    currentVideoTrack = track;
+    setTimeout(() => {
+        timerCallback();
+    }, 1);
+
+    try {
+        const imageCapture = new ImageCapture(track);
+        const photoCapabilities = imageCapture.getPhotoCapabilities().then(() => {
+            track.applyConstraints({
+                advanced: [{torch: true}]
+            });
+        });
+    } catch {
+        
+    }
+};
+
 function timerCallback() {
     if (video.paused || video.ended) {
         return;
@@ -110,7 +130,7 @@ function timerCallback() {
     }, durationBetweenFrames);
 };
 
-const getFrame = () => {
+function getFrame() {
     hiddenCanvas.width = 256;
     hiddenCanvas.height = 256/(video.videoWidth/video.videoHeight);
     let ctx = hiddenCanvas.getContext('2d');
@@ -133,14 +153,18 @@ const getFrame = () => {
     let redAverage = (sumRed/pixels)/256;
     let blueAverage = (sumBlue/pixels)/256;
     let greenAverage = (sumGreen/pixels)/256;
-    ppgText.innerHTML = greenAverage.toPrecision(4) + "," + redAverage.toPrecision(4) + "," + blueAverage.toPrecision(4);
-    if (isRecording && blueAverage < 0.7) {
-        greenSeries.push(greenAverage);
-        redSeries.push(redAverage);
-        blueSeries.push(blueAverage);
-        let seconds = recordingLength - Math.abs(new Date()-recordingStart)/1000;
-        timesSeries.push(seconds);
-        recordingText.innerHTML = seconds.toPrecision(2);
+    ppgText.innerHTML = redAverage.toPrecision(4) + "," + greenAverage.toPrecision(4) + "," + blueAverage.toPrecision(4);
+    if (isRecording) {
+        if (blueAverage < 0.3 && greenAverage < 0.3 && redAverage > 0.6) {
+            greenSeries.push(greenAverage);
+            redSeries.push(redAverage);
+            blueSeries.push(blueAverage);
+            let seconds = recordingLength - Math.abs(new Date()-recordingStart)/1000;
+            timesSeries.push(seconds);
+            recordingText.innerHTML = seconds.toPrecision(2);
+        } else {
+            recordingText.innerHTML = "Please make sure you are recording your finger correctly.\nThe screen should be mostly red.";
+        }
     }
     //hiddenCanvas.getContext('2d').putImageData(frame, 0, 0);
 };
@@ -204,28 +228,7 @@ function drawGraph() {
     };
 }
 
-const handleStream = (stream) => {
-    video.srcObject = stream;
-    streamStarted = true;
-    let track = stream.getVideoTracks()[0];
-    currentVideoTrack = track;
-    setTimeout(() => {
-        timerCallback();
-    }, 1);
-
-    try {
-        const imageCapture = new ImageCapture(track);
-        const photoCapabilities = imageCapture.getPhotoCapabilities().then(() => {
-            track.applyConstraints({
-                advanced: [{torch: true}]
-            });
-        });
-    } catch {
-        
-    }
-};
-
-const getCameraSelection = async () => {
+async function getCameraSelection() {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = devices.filter(device => device.kind === 'videoinput');
     const options = videoDevices.map(videoDevice => {
