@@ -1,3 +1,7 @@
+import { Chart, registerables } from './lib/chart.esm.js';
+Chart.register(...registerables);
+
+
 const controls = document.querySelector('.controls');
 const cameraFacingMode = document.querySelector('.video-options>.select-facing-mode');
 const cameraOptions = document.querySelector('.video-options>.select-camera');
@@ -6,10 +10,12 @@ const canvas = document.querySelector('canvas');
 const buttons = [...controls.querySelectorAll('button')];
 const ppgText = document.querySelector('.ppg-text');
 const recordingText = document.querySelector('.recording-text');
+const resultGraph = document.getElementById("result-graph");
 let hiddenCanvas = document.createElement("canvas");
 let streamStarted = false;
 let currentVideoTrack = null;
 let ppgSeries = [];
+let ppgTimes = [];
 let recordingLength = 30;
 let durationBetweenFrames = 100;
 let isRecording = false;
@@ -28,6 +34,7 @@ video.onclick = () => {
     isRecording = true;
     recordingStart = new Date();
     ppgSeries = [];
+    ppgTimes = [];
 }
 
 play.onclick = () => {
@@ -123,6 +130,7 @@ const getFrame = () => {
     if (isRecording) {
         ppgSeries.push(ppg);
         let seconds = recordingLength - Math.abs(new Date()-recordingStart)/1000;
+        ppgTimes.push(seconds);
         recordingText.innerHTML = seconds.toPrecision(2);
     }
     //hiddenCanvas.getContext('2d').putImageData(frame, 0, 0);
@@ -133,6 +141,33 @@ function finishRecording() {
     console.log("recording finished");
     recordingText.innerHTML = "";
     console.log(ppgSeries);
+    drawGraph();
+}
+
+function drawGraph() {
+    ppgSeries.reverse();
+    ppgTimes.reverse();
+    const data = {
+        labels: ppgTimes,
+        datasets: [{
+            label: 'PPG',
+            backgroundColor: 'rgb(255, 99, 132)',
+            borderColor: 'rgb(255, 99, 132)',
+            data: ppgSeries,
+        }]
+    };
+    const config = {
+        type: 'line',
+        data: data,
+        options: {}
+    };
+    let ctx = resultGraph.getContext('2d');
+    ctx.fillStyle='white';
+    ctx.fillRect(0, 0, resultGraph.width, resultGraph.height);
+    Chart.register(...registerables);
+    const chart = new Chart(resultGraph, config);
+    resultGraph.backgroundColor = "white";
+    resultGraph.display = "block";
 }
 
 const handleStream = (stream) => {
