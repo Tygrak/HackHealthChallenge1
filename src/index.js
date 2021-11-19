@@ -12,6 +12,9 @@ const [play, pause] = buttons;
 cameraOptions.onchange = () => {
     startStream();
 };
+cameraFacingMode.onchange = () => {
+    startStream();
+};
 
 play.onclick = () => {
     if (streamStarted) {
@@ -30,14 +33,26 @@ const pauseStream = () => {
 pause.onclick = pauseStream;
 
 const startStream = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-            deviceId: cameraOptions.value,
-            facingMode: cameraFacingMode.value,
-            height: {ideal: 1080},
-            width: {ideal: 1920}
-        }
-    });
+    let constraints;
+    if (cameraFacingMode.value == "any") {
+        constraints = {
+            video: {
+                deviceId: {exact: cameraOptions.value},
+                height: {ideal: 1080},
+                width: {ideal: 1920}
+            }
+        };
+    } else {
+        constraints = {
+            video: {
+                deviceId: cameraOptions.value,
+                facingMode: {exact: cameraFacingMode.value},
+                height: {ideal: 1080},
+                width: {ideal: 1920}
+            }
+        };
+    }
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     handleStream(stream);
 };
 
@@ -86,7 +101,6 @@ const handleStream = (stream) => {
         
     }
 };
-
 
 const getCameraSelection = async () => {
     const devices = await navigator.mediaDevices.enumerateDevices();
