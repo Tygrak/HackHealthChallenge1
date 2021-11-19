@@ -1,5 +1,6 @@
 const controls = document.querySelector('.controls');
-const cameraOptions = document.querySelector('.video-options>select');
+const cameraFacingMode = document.querySelector('.video-options>.select-facing-mode');
+const cameraOptions = document.querySelector('.video-options>.select-camera');
 const video = document.querySelector('video');
 const canvas = document.querySelector('canvas');
 const buttons = [...controls.querySelectorAll('button')];
@@ -32,6 +33,7 @@ const startStream = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
         video: {
             deviceId: cameraOptions.value,
+            facingMode: cameraFacingMode.value,
             height: {ideal: 1080},
             width: {ideal: 1920}
         }
