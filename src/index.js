@@ -19,7 +19,7 @@ let greenSeries = [];
 let blueSeries = [];
 let timesSeries = [];
 let recordingLength = 30;
-let durationBetweenFrames = 100;
+let durationBetweenFrames = 1;
 let isRecording = false;
 let recordingStart = 0;
 
@@ -111,8 +111,8 @@ function timerCallback() {
 };
 
 const getFrame = () => {
-    hiddenCanvas.width = 500;
-    hiddenCanvas.height = 500/(video.videoWidth/video.videoHeight);
+    hiddenCanvas.width = 256;
+    hiddenCanvas.height = 256/(video.videoWidth/video.videoHeight);
     let ctx = hiddenCanvas.getContext('2d');
     ctx.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
     let frame = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
@@ -134,7 +134,7 @@ const getFrame = () => {
     let blueAverage = (sumBlue/pixels)/256;
     let greenAverage = (sumGreen/pixels)/256;
     ppgText.innerHTML = greenAverage.toPrecision(4) + "," + redAverage.toPrecision(4) + "," + blueAverage.toPrecision(4);
-    if (isRecording) {
+    if (isRecording && blueAverage < 0.7) {
         greenSeries.push(greenAverage);
         redSeries.push(redAverage);
         blueSeries.push(blueAverage);
@@ -211,7 +211,7 @@ const handleStream = (stream) => {
     currentVideoTrack = track;
     setTimeout(() => {
         timerCallback();
-    }, 100);
+    }, 1);
 
     try {
         const imageCapture = new ImageCapture(track);
