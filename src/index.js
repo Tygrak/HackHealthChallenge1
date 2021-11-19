@@ -4,6 +4,7 @@ Chart.register(...registerables);
 const controls = document.querySelector('.controls');
 const cameraFacingMode = document.querySelector('.video-options>.select-facing-mode');
 const cameraOptions = document.querySelector('.video-options>.select-camera');
+const recordingLengthOptions = document.querySelector('.video-options>.recording-length');
 const video = document.querySelector('video');
 const canvas = document.querySelector('canvas');
 const buttons = [...controls.querySelectorAll('button')];
@@ -34,6 +35,7 @@ video.onclick = () => {
     startCamera();
     isRecording = true;
     recordingStart = new Date();
+    recordingLength = recordingLengthOptions.value;
     greenSeries = [];
     redSeries = [];
     blueSeries = [];
@@ -131,8 +133,8 @@ function timerCallback() {
 };
 
 function getFrame() {
-    hiddenCanvas.width = 256;
-    hiddenCanvas.height = 256/(video.videoWidth/video.videoHeight);
+    hiddenCanvas.width = 128;
+    hiddenCanvas.height = 128;
     let ctx = hiddenCanvas.getContext('2d');
     ctx.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
     let frame = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
