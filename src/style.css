@@ -72,10 +72,10 @@ video {
 
 .chart-canvas {
     position: absolute;
-    width: 50%;
-    height: 30%;
-    left: 25%;
-    top: 40%;
+    width: 90%;
+    height: 80%;
+    left: 5%;
+    top: 10%;
 }
 
 .chart-canvas > canvas {
@@ -83,4 +83,6 @@ video {
     width: 100%;
     height: 100%;
     background-color: white;
+    z-index: 1000;
+    position: absolute;
 }

@@ -14,8 +14,10 @@ const resultGraph = document.getElementById("result-graph");
 let hiddenCanvas = document.createElement("canvas");
 let streamStarted = false;
 let currentVideoTrack = null;
-let ppgSeries = [];
-let ppgTimes = [];
+let redSeries = [];
+let greenSeries = [];
+let blueSeries = [];
+let timesSeries = [];
 let recordingLength = 30;
 let durationBetweenFrames = 100;
 let isRecording = false;
@@ -33,9 +35,14 @@ video.onclick = () => {
     startCamera();
     isRecording = true;
     recordingStart = new Date();
-    ppgSeries = [];
-    ppgTimes = [];
-}
+    greenSeries = [];
+    redSeries = [];
+    blueSeries = [];
+    timesSeries = [];
+};
+resultGraph.onclick = () => {
+    resultGraph.display = "none";
+};
 
 play.onclick = () => {
     startCamera();
@@ -125,12 +132,14 @@ const getFrame = () => {
     }
     let redAverage = (sumRed/pixels)/256;
     let blueAverage = (sumBlue/pixels)/256;
-    let ppg = (sumGreen/pixels)/256;
-    ppgText.innerHTML = ppg.toPrecision(4) + "," + redAverage.toPrecision(4) + "," + blueAverage.toPrecision(4);
+    let greenAverage = (sumGreen/pixels)/256;
+    ppgText.innerHTML = greenAverage.toPrecision(4) + "," + redAverage.toPrecision(4) + "," + blueAverage.toPrecision(4);
     if (isRecording) {
-        ppgSeries.push(ppg);
+        greenSeries.push(greenAverage);
+        redSeries.push(redAverage);
+        blueSeries.push(blueAverage);
         let seconds = recordingLength - Math.abs(new Date()-recordingStart)/1000;
-        ppgTimes.push(seconds);
+        timesSeries.push(seconds);
         recordingText.innerHTML = seconds.toPrecision(2);
     }
     //hiddenCanvas.getContext('2d').putImageData(frame, 0, 0);
@@ -140,20 +149,42 @@ function finishRecording() {
     isRecording = false;
     console.log("recording finished");
     recordingText.innerHTML = "";
-    console.log(ppgSeries);
-    drawGraph();
+    console.log(greenSeries);
+    redSeries.reverse();
+    greenSeries.reverse();
+    blueSeries.reverse();
+    timesSeries.reverse();
+    let result = "";
+    for (let i = 0; i < redSeries.length; i++) {
+        result += redSeries[i] + ";";
+    }
+    result += "\n";
+    for (let i = 0; i < greenSeries.length; i++) {
+        result += greenSeries[i] + ";";
+    }
+    result += "\n";
+    for (let i = 0; i < blueSeries.length; i++) {
+        result += blueSeries[i] + ";";
+    }
+    result += "\n";
+    for (let i = 0; i < timesSeries.length; i++) {
+        result += timesSeries[i] + ";";
+    }
+    result += "\n";
+    createDownload(result, "data.txt");
+    //drawGraph();
 }
 
 function drawGraph() {
-    ppgSeries.reverse();
-    ppgTimes.reverse();
+    greenSeries.reverse();
+    timesSeries.reverse();
     const data = {
-        labels: ppgTimes,
+        labels: timesSeries,
         datasets: [{
             label: 'PPG',
             backgroundColor: 'rgb(255, 99, 132)',
             borderColor: 'rgb(255, 99, 132)',
-            data: ppgSeries,
+            data: greenSeries,
         }]
     };
     const config = {
@@ -168,6 +199,9 @@ function drawGraph() {
     const chart = new Chart(resultGraph, config);
     resultGraph.backgroundColor = "white";
     resultGraph.display = "block";
+    resultGraph.onclick = () => {
+        resultGraph.display = "none";
+    };
 }
 
 const handleStream = (stream) => {
@@ -199,5 +233,23 @@ const getCameraSelection = async () => {
     });
     cameraOptions.innerHTML = options.join('');
 };
+
+function createDownload(data, filename) {
+    let file = new Blob([data], {type: "text/plain"});
+    if (window.navigator.msSaveOrOpenBlob) { // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    } else { // Others
+        let a = document.createElement("a");
+        let url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
+}
 
 getCameraSelection();
