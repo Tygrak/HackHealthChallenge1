@@ -27,12 +27,25 @@ play.onclick = () => {
 };
 
 const pauseStream = () => {
+    try {
+        const imageCapture = new ImageCapture(track);
+        const photoCapabilities = imageCapture.getPhotoCapabilities().then(() => {
+            track.applyConstraints({
+                advanced: [{torch: false}]
+            });
+        });
+    } catch {
+        
+    }
     video.pause();
 };
 
 pause.onclick = pauseStream;
 
 const startStream = async () => {
+    if (currentVideoTrack != null) {
+        currentVideoTrack.stop();
+    }
     let constraints;
     if (cameraFacingMode.value == "any") {
         constraints = {
