@@ -4,8 +4,11 @@ const cameraOptions = document.querySelector('.video-options>.select-camera');
 const video = document.querySelector('video');
 const canvas = document.querySelector('canvas');
 const buttons = [...controls.querySelectorAll('button')];
+const ppgText = document.querySelector('.ppg-text');
+let hiddenCanvas = document.createElement("canvas");
 let streamStarted = false;
 let currentVideoTrack = null;
+let previousPpg = [];
 
 const [play, pause] = buttons;
 
@@ -73,10 +76,10 @@ function timerCallback() {
     if (video.paused || video.ended) {
         return;
     }
-    //getFrame();
+    getFrame();
     setTimeout(() => {
         timerCallback();
-    }, 100);
+    }, 50);
 };
 
 const getFrame = () => {
@@ -86,11 +89,24 @@ const getFrame = () => {
     ctx.drawImage(video, 0, 0);
     let frame = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
     let length = frame.data.length;
+    let sumGreen = 0;
+    let sumRed = 0;
+    let sumBlue = 0;
+    let pixels = 0;
     for (let i = 0; i < length; i += 4) {
         const red = frame.data[i + 0];
         const green = frame.data[i + 1];
         const blue = frame.data[i + 2];
+        sumGreen += green;
+        sumRed += red;
+        sumBlue += blue;
+        pixels++;
     }
+    let redAverage = (sumGreen/pixels)/256;
+    let blueAverage = (sumBlue/pixels)/256;
+    let ppg = (sumGreen/pixels)/256;
+    ppgText.innerHTML = ppg.toPrecision(4) + "," + redAverage.toPrecision(4) + "," + blueAverage.toPrecision(4);
+    previousPpg.push(ppg);
     //hiddenCanvas.getContext('2d').putImageData(frame, 0, 0);
 };
 
