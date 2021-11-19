@@ -4,33 +4,12 @@ const video = document.querySelector('video');
 const canvas = document.querySelector('canvas');
 const buttons = [...controls.querySelectorAll('button')];
 let streamStarted = false;
+let currentVideoTrack = null;
 
 const [play, pause] = buttons;
 
-const constraints = {
-  video: {
-    width: {
-      min: 1280,
-      ideal: 1920,
-      max: 2560,
-    },
-    height: {
-      min: 720,
-      ideal: 1080,
-      max: 1440
-    },
-  }
-};
-
 cameraOptions.onchange = () => {
-    const updatedConstraints = {
-        ...constraints,
-        deviceId: {
-        exact: cameraOptions.value
-        }
-    };
-
-    startStream(updatedConstraints);
+    startStream();
 };
 
 play.onclick = () => {
@@ -39,13 +18,7 @@ play.onclick = () => {
         return;
     }
     if ('mediaDevices' in navigator && navigator.mediaDevices.getUserMedia) {
-        const updatedConstraints = {
-        ...constraints,
-        deviceId: {
-            exact: cameraOptions.value
-        }
-        };
-        startStream(updatedConstraints);
+        startStream();
     }
 };
 
@@ -55,8 +28,14 @@ const pauseStream = () => {
 
 pause.onclick = pauseStream;
 
-const startStream = async (constraints) => {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+const startStream = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+            deviceId: cameraOptions.value,
+            height: {ideal: 1080},
+            width: {ideal: 1920}
+        }
+    });
     handleStream(stream);
 };
 
@@ -71,7 +50,6 @@ function timerCallback() {
 };
 
 const getFrame = () => {
-    console.log("a");
     hiddenCanvas.width = video.videoWidth;
     hiddenCanvas.height = video.videoHeight;
     let ctx = hiddenCanvas.getContext('2d');
@@ -90,6 +68,7 @@ const handleStream = (stream) => {
     video.srcObject = stream;
     streamStarted = true;
     let track = stream.getVideoTracks()[0];
+    currentVideoTrack = track;
     setTimeout(() => {
         timerCallback();
     }, 100);
