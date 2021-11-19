@@ -13,20 +13,20 @@ const [play, pause, screenshot] = buttons;
 
 const constraints = {
     video: {
-      width: {
-        min: 800,
-        ideal: 800,
-        max: 2560,
-      },
-      height: {
-        min: 600,
-        ideal: 600,
-        max: 1440
-      },
+        width: {
+            min: 800,
+            ideal: 800,
+            max: 2560,
+        },
+        height: {
+            min: 600,
+            ideal: 600,
+            max: 1440
+        },
     }
-  };
+};
 
-play.onclick = () => {
+/*play.onclick = () => {
     if (streamStarted && lastDeviceId == cameraOptions.value) {
         video.play();
         timerCallback();
@@ -35,7 +35,7 @@ play.onclick = () => {
     if ('mediaDevices' in navigator && navigator.mediaDevices.getUserMedia) {
         startStream();
     }
-};
+};*/
 
 const pauseStream = () => {
     video.pause();
@@ -91,7 +91,7 @@ getCameraSelection();
 
 const SUPPORTS_MEDIA_DEVICES = 'mediaDevices' in navigator;
 
-const startStream = async () => {
+const startStreame = async () => {
     if (SUPPORTS_MEDIA_DEVICES) {
         if (devicesFound === 0) {
             throw 'No camera found on this device.';
@@ -124,3 +124,48 @@ const startStream = async () => {
         });
     }
 };
+  
+cameraOptions.onchange = () => {
+    const updatedConstraints = {
+        ...constraints,
+        deviceId: {
+            exact: cameraOptions.value
+        }
+    };
+    startStream(updatedConstraints);
+};
+
+play.onclick = () => {
+    if (streamStarted) {
+        video.play();
+        return;
+    }
+    if ('mediaDevices' in navigator && navigator.mediaDevices.getUserMedia) {
+        const updatedConstraints = {
+            ...constraints,
+            deviceId: {
+                exact: cameraOptions.value
+            }
+        };
+        startStream(updatedConstraints);
+    }
+};
+
+const doScreenshot = () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    screenshotImage.src = canvas.toDataURL('image/webp');
+    screenshotImage.classList.remove('d-none');
+};
+
+const startStream = async (constraints) => {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    handleStream(stream);
+};
+
+const handleStream = (stream) => {
+    video.srcObject = stream;
+};
+
+getCameraSelection();
