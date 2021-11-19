@@ -20,10 +20,14 @@
     position: relative;
 }
 
+body {
+    background: rgba(0,0,0,0.5);
+}
+
 video {
     margin: 5% auto;
     width: 100%;
-    background: rgba(0,0,0,0.2);
+    background: rgba(0.5,0.5,0.5,1);
 }
 
 .video-options {
@@ -45,7 +49,16 @@ video {
     text-align: center;
     border-radius: 100%;
     margin: 0 6px;
-    background: transparent;
+    background: wheat;
+}
+
+.recording-text {
+    position: absolute;
+    left: 45%;
+    top: 30%;
+    text-align: center;
+    font-size: 3em;
+    text-shadow: 1px 1px 2px black;
 }
 
 .ppg-text {
@@ -54,4 +67,5 @@ video {
     top: 50%;
     text-align: center;
     font-size: larger;
+    text-shadow: 1px 1px 2px black;
 }

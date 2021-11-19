@@ -5,10 +5,15 @@ const video = document.querySelector('video');
 const canvas = document.querySelector('canvas');
 const buttons = [...controls.querySelectorAll('button')];
 const ppgText = document.querySelector('.ppg-text');
+const recordingText = document.querySelector('.recording-text');
 let hiddenCanvas = document.createElement("canvas");
 let streamStarted = false;
 let currentVideoTrack = null;
-let previousPpg = [];
+let ppgSeries = [];
+let recordingLength = 30;
+let durationBetweenFrames = 100;
+let isRecording = false;
+let recordingStart = 0;
 
 const [play, pause] = buttons;
 
@@ -18,29 +23,34 @@ cameraOptions.onchange = () => {
 cameraFacingMode.onchange = () => {
     startStream();
 };
+video.onclick = () => {
+    startCamera();
+    isRecording = true;
+    recordingStart = new Date();
+    ppgSeries = [];
+}
 
 play.onclick = () => {
+    startCamera();
+};
+
+function startCamera() {
     if (streamStarted) {
+        timerCallback();
         video.play();
         return;
     }
     if ('mediaDevices' in navigator && navigator.mediaDevices.getUserMedia) {
         startStream();
     }
-};
+}
 
 const pauseStream = () => {
-    try {
-        const imageCapture = new ImageCapture(track);
-        const photoCapabilities = imageCapture.getPhotoCapabilities().then(() => {
-            track.applyConstraints({
-                advanced: [{torch: false}]
-            });
-        });
-    } catch {
-        
-    }
     video.pause();
+    if (currentVideoTrack != null) {
+        currentVideoTrack.stop();
+    }
+    streamStarted = false;
 };
 
 pause.onclick = pauseStream;
@@ -77,16 +87,20 @@ function timerCallback() {
         return;
     }
     getFrame();
+    let seconds = Math.abs(new Date() - recordingStart) / 1000;
+    if (seconds > recordingLength && isRecording) {
+        finishRecording();
+    }
     setTimeout(() => {
         timerCallback();
-    }, 50);
+    }, durationBetweenFrames);
 };
 
 const getFrame = () => {
-    hiddenCanvas.width = video.videoWidth;
-    hiddenCanvas.height = video.videoHeight;
+    hiddenCanvas.width = 500;
+    hiddenCanvas.height = 500/(video.videoWidth/video.videoHeight);
     let ctx = hiddenCanvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
     let frame = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
     let length = frame.data.length;
     let sumGreen = 0;
@@ -102,13 +116,24 @@ const getFrame = () => {
         sumBlue += blue;
         pixels++;
     }
-    let redAverage = (sumGreen/pixels)/256;
+    let redAverage = (sumRed/pixels)/256;
     let blueAverage = (sumBlue/pixels)/256;
     let ppg = (sumGreen/pixels)/256;
     ppgText.innerHTML = ppg.toPrecision(4) + "," + redAverage.toPrecision(4) + "," + blueAverage.toPrecision(4);
-    previousPpg.push(ppg);
+    if (isRecording) {
+        ppgSeries.push(ppg);
+        let seconds = recordingLength - Math.abs(new Date()-recordingStart)/1000;
+        recordingText.innerHTML = seconds.toPrecision(2);
+    }
     //hiddenCanvas.getContext('2d').putImageData(frame, 0, 0);
 };
+
+function finishRecording() {
+    isRecording = false;
+    console.log("recording finished");
+    recordingText.innerHTML = "";
+    console.log(ppgSeries);
+}
 
 const handleStream = (stream) => {
     video.srcObject = stream;
