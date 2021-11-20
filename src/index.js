@@ -127,6 +127,7 @@ function handleStream(stream) {
 
 function timerCallback() {
     if (video.paused || video.ended) {
+        recordingText.innerText = "Camera stopped.\nTouch screen to start camera again.";
         return;
     }
     getFrame();
@@ -164,7 +165,7 @@ function getFrame() {
     let greenAverage = (sumGreen/pixels)/256;
     ppgText.innerHTML = redAverage.toPrecision(4) + "," + greenAverage.toPrecision(4) + "," + blueAverage.toPrecision(4);
     if (isRecording) {
-        if (blueAverage < 0.3 && greenAverage < 0.3 && redAverage > 0.6) {
+        if (blueAverage < 0.2 && greenAverage < 0.35 && redAverage > 0.7) {
             greenSeries.push(greenAverage);
             redSeries.push(redAverage);
             blueSeries.push(blueAverage);
@@ -175,7 +176,7 @@ function getFrame() {
             recordingText.innerText = "Please make sure you are recording your finger correctly.\nThe screen should be mostly red.";
         }
     } else if (startingRecording) {
-        if (blueAverage < 0.3 && greenAverage < 0.3 && redAverage > 0.6) {
+        if (blueAverage < 0.2 && greenAverage < 0.35 && redAverage > 0.7) {
             let seconds = recordingLength - Math.abs(new Date()-recordingStart)/1000;
             if (seconds > 0.75) {
                 startRecording();
@@ -189,6 +190,7 @@ function getFrame() {
 
 function finishRecording() {
     isRecording = false;
+    currentVideoTrack.stop();
     console.log("recording finished");
     recordingText.innerHTML = "";
     console.log(greenSeries);
