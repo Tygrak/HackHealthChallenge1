@@ -8,8 +8,7 @@
     </head>
     
     <body>
-        <div class="chart-canvas">
-            <canvas id="result-graph"></canvas>
+        <div class="chart-canvas" id="chart-canvas">
         </div>
         <div class="display-cover">
             <video autoplay></video>
@@ -35,10 +34,11 @@
             </div>
 
             
-            <div class="recording-text"></div>
+            <div class="recording-text">Touch screen to begin.</div>
             <div class="ppg-text">ppg:</div>
         </div>        
-
+        
+        <script src="https://cdn.plot.ly/plotly-2.6.3.min.js"></script>
         <script type="module" src="index.js"></script>  
     </body>
 </html>

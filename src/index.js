@@ -1,5 +1,4 @@
-import { Chart, registerables } from './lib/chart.esm.js';
-Chart.register(...registerables);
+import "https://cdn.plot.ly/plotly-2.6.3.min.js"
 
 const controls = document.querySelector('.controls');
 const cameraFacingMode = document.querySelector('.video-options>.select-facing-mode');
@@ -10,7 +9,7 @@ const canvas = document.querySelector('canvas');
 const buttons = [...controls.querySelectorAll('button')];
 const ppgText = document.querySelector('.ppg-text');
 const recordingText = document.querySelector('.recording-text');
-const resultGraph = document.getElementById("result-graph");
+const chartCanvas = document.querySelector(".chart-canvas");
 let hiddenCanvas = document.createElement("canvas");
 let streamStarted = false;
 let currentVideoTrack = null;
@@ -18,6 +17,7 @@ let redSeries = [];
 let greenSeries = [];
 let blueSeries = [];
 let timesSeries = [];
+let startingRecording = false;
 let recordingLength = 30;
 let durationBetweenFrames = 1;
 let isRecording = false;
@@ -33,6 +33,20 @@ cameraFacingMode.onchange = () => {
 };
 video.onclick = () => {
     startCamera();
+    startingRecording = true;
+    recordingStart = new Date();
+    recordingText.innerText = "Cover camera with index finger to start recording.\nThe screen should be mostly red.";
+};
+chartCanvas.onclick = () => {
+    chartCanvas.style.display = "none";
+};
+
+play.onclick = () => {
+    startCamera();
+};
+
+function startRecording() {
+    startingRecording = false;
     isRecording = true;
     recordingStart = new Date();
     recordingLength = recordingLengthOptions.value;
@@ -40,14 +54,7 @@ video.onclick = () => {
     redSeries = [];
     blueSeries = [];
     timesSeries = [];
-};
-resultGraph.onclick = () => {
-    resultGraph.display = "none";
-};
-
-play.onclick = () => {
-    startCamera();
-};
+}
 
 function startCamera() {
     if (streamStarted) {
@@ -104,7 +111,7 @@ function handleStream(stream) {
     currentVideoTrack = track;
     setTimeout(() => {
         timerCallback();
-    }, 1);
+    }, 100);
 
     try {
         const imageCapture = new ImageCapture(track);
@@ -163,9 +170,18 @@ function getFrame() {
             blueSeries.push(blueAverage);
             let seconds = recordingLength - Math.abs(new Date()-recordingStart)/1000;
             timesSeries.push(seconds);
-            recordingText.innerHTML = seconds.toPrecision(2);
+            recordingText.innerText = seconds.toPrecision(2);
         } else {
-            recordingText.innerHTML = "Please make sure you are recording your finger correctly.\nThe screen should be mostly red.";
+            recordingText.innerText = "Please make sure you are recording your finger correctly.\nThe screen should be mostly red.";
+        }
+    } else if (startingRecording) {
+        if (blueAverage < 0.3 && greenAverage < 0.3 && redAverage > 0.6) {
+            let seconds = recordingLength - Math.abs(new Date()-recordingStart)/1000;
+            if (seconds > 0.75) {
+                startRecording();
+            }
+        } else {
+            recordingStart = new Date();
         }
     }
     //hiddenCanvas.getContext('2d').putImageData(frame, 0, 0);
@@ -198,36 +214,34 @@ function finishRecording() {
     }
     result += "\n";
     createDownload(result, "data.txt");
-    //drawGraph();
+    drawGraph();
 }
 
 function drawGraph() {
-    greenSeries.reverse();
-    timesSeries.reverse();
-    const data = {
-        labels: timesSeries,
-        datasets: [{
-            label: 'PPG',
-            backgroundColor: 'rgb(255, 99, 132)',
-            borderColor: 'rgb(255, 99, 132)',
-            data: greenSeries,
-        }]
+    chartCanvas.style.display = "block";
+    var trace1 = {
+        x: timesSeries,
+        y: redSeries,
+        type: 'scatter'
     };
-    const config = {
-        type: 'line',
-        data: data,
-        options: {}
+    var layout = {
+        title: {
+            text:'PPG',
+            xref: 'paper',
+        },
+        xaxis: {
+            title: {
+                text: 'Time',
+            },
+        },
+        yaxis: {
+            title: {
+                text: 'PPG',
+            }
+        }
     };
-    let ctx = resultGraph.getContext('2d');
-    ctx.fillStyle='white';
-    ctx.fillRect(0, 0, resultGraph.width, resultGraph.height);
-    Chart.register(...registerables);
-    const chart = new Chart(resultGraph, config);
-    resultGraph.backgroundColor = "white";
-    resultGraph.display = "block";
-    resultGraph.onclick = () => {
-        resultGraph.display = "none";
-    };
+    var data = [trace1];
+    Plotly.newPlot('chart-canvas', data, layout);
 }
 
 async function getCameraSelection() {
