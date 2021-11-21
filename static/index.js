@@ -10,6 +10,7 @@ const buttons = [...controls.querySelectorAll('button')];
 const ppgText = document.querySelector('.ppg-text');
 const recordingText = document.querySelector('.recording-text');
 const chartCanvas = document.querySelector(".chart-canvas");
+const chartText = document.querySelector(".chart-text");
 let hiddenCanvas = document.createElement("canvas");
 let streamStarted = false;
 let currentVideoTrack = null;
@@ -22,6 +23,7 @@ let recordingLength = 30;
 let durationBetweenFrames = 1;
 let isRecording = false;
 let recordingStart = 0;
+let currentPlot = null;
 
 const [play, pause] = buttons;
 
@@ -39,6 +41,7 @@ video.onclick = () => {
 };
 chartCanvas.onclick = () => {
     chartCanvas.style.display = "none";
+    chartText.style.display = "none";
 };
 
 play.onclick = () => {
@@ -217,18 +220,58 @@ function finishRecording() {
     result += "\n";
     createDownload(result, "data.txt");
     drawGraph();
+    sendData();
+}
+
+function sendData() {
+    let xhr = new XMLHttpRequest();
+    let data = JSON.stringify({"redChannel":redSeries, "times":timesSeries});
+    xhr.open('POST', "/request/uploadData/", true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.send(data);
+
+    xhr.onreadystatechange = processRequest;
+
+    function processRequest(e) {
+        if(xhr.readyState == 4 && xhr.status == 200) {
+            let result = xhr.responseText;
+            console.log(xhr.responseText);
+            if (currentPlot != null) {
+                let layout = {
+                    title: {
+                        text: "PPG, estimated heart rate: "+parseFloat(result).toPrecision(4),
+                        xref: 'paper',
+                    },
+                    xaxis: {
+                        title: {
+                            text: 'Time',
+                        },
+                    },
+                    yaxis: {
+                        title: {
+                            text: 'PPG',
+                        }
+                    }
+                };
+                Plotly.relayout('chart-canvas', layout);
+                chartCanvas.style.display = "block";
+                chartText.innerText = "Estimated heart rate: "+parseFloat(result).toPrecision(4);
+                chartText.style.display = "block";
+            }
+        }
+    }
 }
 
 function drawGraph() {
     chartCanvas.style.display = "block";
-    var trace1 = {
+    let trace1 = {
         x: timesSeries,
         y: redSeries,
         type: 'scatter'
     };
-    var layout = {
+    let layout = {
         title: {
-            text:'PPG',
+            text: 'PPG',
             xref: 'paper',
         },
         xaxis: {
@@ -243,7 +286,7 @@ function drawGraph() {
         }
     };
     var data = [trace1];
-    Plotly.newPlot('chart-canvas', data, layout);
+    currentPlot = Plotly.newPlot('chart-canvas', data, layout);
 }
 
 async function getCameraSelection() {

@@ -4,3 +4,5 @@
 /dist
 package-lock.json
 *.data
+__pycache__/
+api_key.py

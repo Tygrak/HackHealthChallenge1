@@ -4,11 +4,13 @@
         <title>
             Hack Health Challenge 1
         </title>
-        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     </head>
     
     <body>
         <div class="chart-canvas" id="chart-canvas">
+        </div>
+        <div class="chart-text" id="chart-text">
         </div>
         <div class="display-cover">
             <video autoplay></video>
@@ -37,8 +39,7 @@
             <div class="recording-text">Touch screen to begin.</div>
             <div class="ppg-text">ppg:</div>
         </div>        
-        
-        <script src="https://cdn.plot.ly/plotly-2.6.3.min.js"></script>
-        <script type="module" src="index.js"></script>  
+
+        <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>  
     </body>
 </html>

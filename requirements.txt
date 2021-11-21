@@ -1,0 +1,5 @@
+Flask==1.0.3
+numpy==1.21.4
+scipy==1.7.2
+requests
+gunicorn==19.9.0
